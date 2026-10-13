@@ -1,0 +1,217 @@
+Table roles {
+  id integer [pk, increment]
+  name varchar(30) [not null, unique]
+  description text
+}
+
+
+Table users {
+  id integer [pk, increment]
+  role_id integer [not null, ref: > roles.id]
+  email varchar(254) [not null, unique]
+  password_hash varchar(255) [not null]
+  first_name varchar(100)
+  last_name varchar(100)
+  country varchar(100)
+
+  created_at timestamp [not null]
+  updated_at timestamp
+  updated_by integer [ref: > users.id]
+  deleted_at timestamp
+}
+
+Table client_profiles {
+  id integer [pk, increment]
+  user_id integer [not null, unique, ref: - users.id]
+  company_name varchar(255) [not null]
+  hiring_percentage decimal(5,2)
+  avg_hourly_rate decimal(12,2)
+
+  created_at timestamp [not null]
+  updated_at timestamp
+  updated_by integer [ref: > users.id]
+  deleted_at timestamp
+}
+
+Table freelancer_profiles {
+  id integer [pk, increment]
+  user_id integer [not null, unique, ref: - users.id]
+  hourly_rate decimal(12,2)
+  education text
+  category_id integer [ref: > categories.id]
+  employment_type varchar(30)
+  description text
+  portfolio text
+
+  created_at timestamp [not null]
+  updated_at timestamp
+  updated_by integer [ref: > users.id]
+  deleted_at timestamp
+}
+
+
+Table categories {
+  id integer [pk, increment]
+  name varchar(100) [not null, unique]
+  description text
+}
+
+Table skills {
+  id integer [pk, increment]
+  name varchar(100) [not null, unique]
+}
+
+Table freelancer_skills {
+  freelancer_id integer [not null, ref: > freelancer_profiles.id]
+  skill_id integer [not null, ref: > skills.id]
+
+  indexes {
+    (freelancer_id, skill_id) [pk]
+  }
+}
+
+
+Table jobs {
+  id integer [pk, increment]
+  client_id integer [not null, ref: > client_profiles.id]
+  category_id integer [ref: > categories.id]
+  title varchar(255) [not null]
+  price decimal(12,2) [not null]
+  employment_type varchar(30)
+  freelancers_count integer
+  description text
+
+  created_at timestamp [not null]
+  updated_at timestamp
+  updated_by integer [ref: > users.id]
+  deleted_at timestamp
+
+  indexes {
+    (id, client_id) [unique]
+  }
+
+}
+
+Table job_skills {
+  job_id integer [not null, ref: > jobs.id]
+  skill_id integer [not null, ref: > skills.id]
+
+  indexes {
+    (job_id, skill_id) [pk]
+  }
+}
+
+Table proposals {
+  id integer [pk, increment]
+  job_id integer [not null, ref: > jobs.id]
+  freelancer_id integer [not null, ref: > freelancer_profiles.id]
+  price decimal(12,2) [not null]
+  cover_letter text
+
+  submitted_at timestamp [not null]
+  updated_at timestamp
+  deleted_at timestamp
+
+  indexes {
+   (job_id, freelancer_id) [unique]
+   (id, job_id) [unique]
+   (id, job_id, freelancer_id) [unique]
+  }
+}
+
+
+Table test_tasks {
+  id integer [pk, increment]
+  job_id integer [not null, ref: > jobs.id]
+  proposal_id integer 
+  task_number varchar(50)
+  description text
+  deadline timestamp
+  result text
+
+  created_at timestamp [not null]
+  updated_at timestamp
+  deleted_at timestamp
+}
+
+Table interviews {
+  id integer [pk, increment]
+  job_id integer [not null]
+  proposal_id integer [not null]
+  round_number integer [not null]
+  interview_date timestamp [not null]
+  link varchar(2048)
+  message_for_freelancer text
+
+  created_at timestamp [not null]
+  updated_at timestamp
+  deleted_at timestamp
+
+  indexes {
+    (proposal_id, round_number) [unique]
+  }
+}
+
+Table contracts {
+  id integer [pk, increment]
+  job_id integer [not null, ref: > jobs.id]
+  proposal_id integer [not null, unique, ref: - proposals.id]
+  client_id integer [not null, ref: > client_profiles.id]
+  freelancer_id integer [not null, ref: > freelancer_profiles.id]
+
+  start_date timestamp [not null]
+  price decimal(12,2) [not null]
+
+  created_at timestamp [not null]
+  updated_at timestamp
+  updated_by integer [ref: > users.id]
+  deleted_at timestamp
+}
+
+Table contract_milestones {
+  id integer [pk, increment]
+  contract_id integer [not null, ref: > contracts.id]
+  title varchar(255) [not null]
+  amount decimal(12,2) [not null]
+  due_date timestamp
+  status varchar(30) [not null]
+}
+
+Table reviews {
+  id integer [pk, increment]
+  contract_id integer [not null, unique, ref: - contracts.id]
+
+  client_review text
+  client_rating integer
+
+  freelancer_review text
+  freelancer_rating integer
+
+  created_at timestamp [not null]
+  updated_at timestamp
+}
+
+Table mentorships {
+  id integer [pk, increment]
+  mentor_id integer [not null, ref: > freelancer_profiles.id]
+  mentee_id integer [not null, ref: > freelancer_profiles.id]
+  price decimal(12,2)
+  start_date timestamp [not null]
+
+}
+
+Table notifications {
+  id integer [pk, increment]
+  user_id integer [not null, ref: > users.id]
+  message text [not null]
+  is_read boolean [not null, default: false]
+  created_at timestamp [not null]
+}
+
+Ref: contracts.(job_id, client_id) > jobs.(id, client_id)
+
+Ref: contracts.(proposal_id, job_id, freelancer_id) > proposals.(id, job_id, freelancer_id)
+
+Ref: test_tasks.(proposal_id, job_id) > proposals.(id, job_id)
+
+Ref: interviews.(proposal_id, job_id) > proposals.(id, job_id)
